@@ -3,14 +3,14 @@ package com.spike;
 import java.util.List;
 
 class RecursiveDescentParser implements Parser {
-  String source;
+  List<Token> tokens;
 
-  RecursiveDescentParser(String source) {
-    this.source = source;
+  RecursiveDescentParser(List<Token> tokens) {
+    this.tokens = tokens;
   }
 
   @Override
-  public List<Stmt> parse(List<Token> tokens) {
+  public List<Stmt> parse() {
     return null;
   }
 }

@@ -3,12 +3,12 @@ package com.spike;
 import java.util.List;
 
 interface Parser {
-  List<Stmt> parse(List<Token> tokens);
+  List<Stmt> parse();
 
-  static Parser getParser(String source) {
+  static Parser getParser(List<Token> tokens) {
     if (Spike.isRDP)
-      return new RecursiveDescentParser(source);
+      return new RecursiveDescentParser(tokens);
     else
-      return new PrattParser(source);
+      return new PrattParser(tokens);
   }
 }

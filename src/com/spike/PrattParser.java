@@ -3,14 +3,14 @@ package com.spike;
 import java.util.List;
 
 class PrattParser implements Parser {
-  String source;
+  List<Token> tokens;
 
-  PrattParser(String source) {
-    this.source = source;
+  PrattParser(List<Token> tokens) {
+    this.tokens = tokens;
   }
 
   @Override
-  public List<Stmt> parse(List<Token> tokens) {
+  public List<Stmt> parse() {
     return null;
   }
 }
