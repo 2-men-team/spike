@@ -29,15 +29,29 @@ public final class Spike {
     System.out.println(source);
   }
 
+  private static boolean setParserType(String name) {
+    if (name.equalsIgnoreCase("pratt"))
+      isRDP = false;
+    else if (name.equalsIgnoreCase("rdf"))
+      isRDP = true;
+    else return false;
+    return true;
+  }
+
+  // #TODO: REWRITE CLI INTERFACE (picocli)
   public static void main(String[] args) throws IOException {
     if (args.length > 3) {
       System.out.println("Usage: spike [ main.sp ] [ parser type ]");
     } else if (args.length == 3) {
-      if      (args[2].equalsIgnoreCase("pratt")) isRDP = false;
-      else if (args[2].equalsIgnoreCase("rdp"))   isRDP = true;
-      else     System.out.println("Invalid parser type, 'pratt' and 'rdp' supported only.");
+      if (setParserType(args[2]))
+        runFile(args[1]);
+      else
+        System.out.println("Invalid parser type, 'pratt' and 'rdp' supported only.");
     } else if (args.length == 2) {
-      runFile(args[1]);
+      if (setParserType(args[1]))
+        runCLI();
+      else
+        runFile(args[1]);
     } else {
       runCLI();
     }
