@@ -11,7 +11,12 @@ class PrattParser extends Parser {
   }
 
   @Override
-  public List<Stmt> parse() {
+  public boolean parse() {
+    return false;
+  }
+
+  @Override
+  List<Stmt> getAst() {
     return null;
   }
 }

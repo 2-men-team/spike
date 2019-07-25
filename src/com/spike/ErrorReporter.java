@@ -5,8 +5,9 @@ import java.io.PrintWriter;
 
 // TODO: Make errors great again
 class ErrorReporter {
-  private PrintWriter writer;
+  private final PrintWriter writer;
   private boolean hadErrors;
+  private final String[] lines;
 
   class Exception extends RuntimeException {
     Exception() {
@@ -18,13 +19,14 @@ class ErrorReporter {
     }
   }
 
-  ErrorReporter(OutputStream stream) {
+  ErrorReporter(OutputStream stream, String source) {
     this.writer = new PrintWriter(stream);
+    this.lines = source.split("\n");
     this.hadErrors = false;
   }
 
-  ErrorReporter() {
-    this(System.err);
+  ErrorReporter(String source) {
+    this(System.err, source);
   }
 
   public boolean hadErrors() {
@@ -35,10 +37,12 @@ class ErrorReporter {
     hadErrors = false;
   }
 
-  // TODO: add column support
   protected String format(Token token, String message) {
-    return String.format(
-        "Error at line %d, token %s:\n\t%s", token.line, token.lexeme, message);
+    String s = String.format("Error at line %d, col %d\n\t", token.line, token.column);
+    return s + lines[token.line - 1] + "\n\t" +
+        " ".repeat(token.column - 1) + "^\n\t" +
+        "-".repeat(token.column - 1) + "|\n\n" +
+        message + "\n";
   }
 
   void report(Token token, String message) {

@@ -9,7 +9,8 @@ abstract class Parser {
     this.reporter = reporter;
   }
 
-  abstract List<Stmt> parse();
+  abstract boolean parse();
+  abstract List<Stmt> getAst();
 
   public ErrorReporter getReporter() {
     return reporter;

@@ -76,13 +76,16 @@ class RecursiveDescentParser extends Parser {
   }
 
   @Override
-  public List<Stmt> parse() {
-    if (ast == null) {
-      while (!is(EOF)) {
-        ast.add(declaration());
-      }
+  public boolean parse() {
+    while (!is(EOF)) {
+      ast.add(declaration());
     }
 
+    return reporter.hadErrors();
+  }
+
+  @Override
+  public List<Stmt> getAst() {
     return ast;
   }
 
