@@ -2,13 +2,24 @@ package com.spike;
 
 import java.util.List;
 
-interface Parser {
-  List<Stmt> parse();
+abstract class Parser {
+  protected ErrorReporter reporter;
 
-  static Parser getParser(List<Token> tokens) {
+  Parser(ErrorReporter reporter) {
+    this.reporter = reporter;
+  }
+
+  abstract boolean parse();
+  abstract List<Stmt> getAst();
+
+  public ErrorReporter getReporter() {
+    return reporter;
+  }
+
+  static Parser getParser(List<Token> tokens, ErrorReporter reporter) {
     if (Spike.isRDP)
-      return new RecursiveDescentParser(tokens);
+      return new RecursiveDescentParser(tokens, reporter);
     else
-      return new PrattParser(tokens);
+      return new PrattParser(tokens, reporter);
   }
 }
