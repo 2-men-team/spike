@@ -7,7 +7,7 @@ class Token {
   final Object literal;
   final TokenType type;
 
-  Token(int line, int column, String lexeme, Object literal, TokenType type) {
+  Token(TokenType type, String lexeme, Object literal, int line, int column) {
     this.line = line;
     this.column = column;
     this.lexeme = lexeme;
@@ -17,6 +17,6 @@ class Token {
 
   @Override
   public String toString() {
-    return "[" + lexeme + "," + type + "]";
+    return "[" + lexeme + " " + type + "]";
   }
 }

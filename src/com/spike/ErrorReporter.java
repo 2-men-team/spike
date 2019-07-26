@@ -20,7 +20,7 @@ class ErrorReporter {
   }
 
   ErrorReporter(OutputStream stream, String source) {
-    this.writer = new PrintWriter(stream);
+    this.writer = new PrintWriter(stream, true);
     this.lines = source.split("\n");
     this.hadErrors = false;
   }
@@ -37,6 +37,15 @@ class ErrorReporter {
     hadErrors = false;
   }
 
+  protected String format(int line, String message) {
+    return String.format("Error at line %d:\n\t%s", line, message);
+  }
+
+  void report(int line, String message) {
+    hadErrors = true;
+    writer.println(format(line, message));
+  }
+  
   protected String format(Token token, String message) {
     String s = String.format("Error at line %d, col %d\n\t", token.line, token.column);
     return s + lines[token.line - 1] + "\n\t" +
