@@ -4,7 +4,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 
 // TODO: Make errors great again
-
 class ErrorReporter {
   private PrintWriter writer;
   private boolean hadErrors;
