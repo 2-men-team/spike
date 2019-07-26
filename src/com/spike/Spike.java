@@ -28,6 +28,7 @@ public final class Spike {
   }
 
   private static void run(String source) {
+    reporter.setSource(source);
     var scanner = new Scanner(source, reporter);
     var tokens = scanner.scanTokens();
 

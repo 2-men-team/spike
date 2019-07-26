@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 class ErrorReporter {
   private final PrintWriter writer;
   private boolean hadErrors;
-  private final String[] lines;
+  private String[] lines;
 
   class Exception extends RuntimeException {
     Exception() {
@@ -19,14 +19,13 @@ class ErrorReporter {
     }
   }
 
-  ErrorReporter(OutputStream stream, String source) {
+  ErrorReporter(OutputStream stream) {
     this.writer = new PrintWriter(stream, true);
-    this.lines = source.split("\n");
     this.hadErrors = false;
   }
 
-  ErrorReporter(String source) {
-    this(System.err, source);
+  ErrorReporter() {
+    this(System.err);
   }
 
   public boolean hadErrors() {
@@ -39,6 +38,11 @@ class ErrorReporter {
 
   protected String format(int line, String message) {
     return String.format("Error at line %d:\n\t%s", line, message);
+  }
+
+  ErrorReporter setSource(String source) {
+    lines = source.split("\n");
+    return this;
   }
 
   void report(int line, String message) {

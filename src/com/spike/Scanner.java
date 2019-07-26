@@ -10,7 +10,7 @@ class Scanner {
   private final ErrorReporter reporter;
   private final String source;
   private final List<Token> tokens = new ArrayList<>();
-  private int current = 0, start = 0, line = 1;
+  private int current = 0, start = 0, line = 1, column = 0;
 
   private static final HashMap<String, TokenType> keywords = new HashMap<>();
 
@@ -43,7 +43,7 @@ class Scanner {
       scanToken();
     }
 
-    tokens.add(new Token(EOF, "", null, line));
+    tokens.add(new Token(EOF, "", null, line, column));
     return tokens;
   }
 
@@ -217,6 +217,6 @@ class Scanner {
 
   private void addToken(TokenType type, Object literal) {
     String lexeme = source.substring(start, current);
-    tokens.add(new Token(type, lexeme, literal, line));
+    tokens.add(new Token(type, lexeme, literal, column, line));
   }
 }
