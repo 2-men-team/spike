@@ -17,7 +17,7 @@ public final class Spike {
     System.out.print(">> ");
     while (true) {
       String line = reader.readLine();
-      if (line.equalsIgnoreCase("exit")) return;
+      if (line == null || line.equalsIgnoreCase("exit")) return;
       run(line);
       System.out.print(">> ");
     }

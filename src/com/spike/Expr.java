@@ -24,7 +24,7 @@ abstract class Expr {
 
   static class Binary extends Expr {
     final Expr left;
-    final Token operator;
+    final Token operator; // NOTE: operator might have a form of op=
     final Expr right;
 
     Binary(Expr left, Token operator, Expr right) {
