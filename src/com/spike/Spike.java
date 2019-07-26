@@ -8,10 +8,12 @@ import java.nio.file.Paths;
 
 // Java version 11
 public final class Spike {
+  private static final ErrorReporter reporter = new ErrorReporter();
+
   static boolean isRDP = true;
 
   private static void runCLI() throws IOException {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    var reader = new BufferedReader(new InputStreamReader(System.in));
     System.out.print(">> ");
     while (true) {
       String line = reader.readLine();
@@ -26,7 +28,12 @@ public final class Spike {
   }
 
   private static void run(String source) {
-    System.out.println(source);
+    var scanner = new Scanner(source, reporter);
+    var tokens = scanner.scanTokens();
+
+    for (Token t : tokens) {
+      System.out.println(t);
+    }
   }
 
   private static boolean setParserType(String name) {
@@ -38,7 +45,7 @@ public final class Spike {
     return true;
   }
 
-  // #TODO: REWRITE CLI INTERFACE (picocli)
+  // #TODO: REWRITE CLI INTERFACE
   public static void main(String[] args) throws IOException {
     if (args.length > 3) {
       System.out.println("Usage: spike [ main.sp ] [ parser type ]");
