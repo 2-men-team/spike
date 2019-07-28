@@ -25,7 +25,7 @@ class ErrorReporter {
   }
 
   ErrorReporter() {
-    this(System.err);
+    this(System.out);
   }
 
   public boolean hadErrors() {
@@ -36,8 +36,12 @@ class ErrorReporter {
     hadErrors = false;
   }
 
-  protected String format(int line, String message) {
-    return String.format("Error at line %d:\n\t%s", line, message);
+  protected String format(int line, int column, String message) {
+    String s = String.format("Error at line %d, col %d\n\t", line, column);
+    return s + lines[line - 1] + "\n\t" +
+      " ".repeat(column - 1) + "^\n\t" +
+      "-".repeat(column - 1) + "|\n\n" +
+      message;
   }
 
   ErrorReporter setSource(String source) {
@@ -45,9 +49,13 @@ class ErrorReporter {
     return this;
   }
 
-  void report(int line, String message) {
+  void report(String message) {
+    writer.println("Error: " + message);
+  }
+
+  void report(int line, int column, String message) {
     hadErrors = true;
-    writer.println(format(line, message));
+    writer.println(format(line, column, message));
   }
   
   protected String format(Token token, String message) {
@@ -55,7 +63,7 @@ class ErrorReporter {
     return s + lines[token.line - 1] + "\n\t" +
         " ".repeat(token.column - 1) + "^\n\t" +
         "-".repeat(token.column - 1) + "|\n\n" +
-        message + "\n";
+        message;
   }
 
   void report(Token token, String message) {

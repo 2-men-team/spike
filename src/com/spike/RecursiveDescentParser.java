@@ -28,6 +28,10 @@ class RecursiveDescentParser extends Parser {
     return tokens.get(curr++);
   }
 
+  private Token previous() {
+    return tokens.get(curr - 1);
+  }
+
   private Token peek() {
     return tokens.get(curr);
   }
@@ -81,7 +85,7 @@ class RecursiveDescentParser extends Parser {
       ast.add(declaration());
     }
 
-    return reporter.hadErrors();
+    return !reporter.hadErrors();
   }
 
   @Override
@@ -278,12 +282,14 @@ class RecursiveDescentParser extends Parser {
   }
 
   private Stmt returnStmt() {
+    Token operator = previous();
     Expr value = expr();
     consume(SEMICOLON, "';' is missing after 'return' statement");
-    return new Stmt.Return(value);
+    return new Stmt.Return(operator, value);
   }
 
   private Stmt ifStmt() {
+    Token operator = previous();
     consume(LEFT_PAREN, "'(' is missing in an 'if' statement");
     Expr condition = expr();
     consume(RIGHT_PAREN, "')' is missing in an 'if' statement");
@@ -291,10 +297,11 @@ class RecursiveDescentParser extends Parser {
     Stmt thenBranch = stmt(), elseBranch = null;
     if (match(ELSE)) elseBranch = stmt();
 
-    return new Stmt.If(condition, thenBranch, elseBranch);
+    return new Stmt.If(operator, condition, thenBranch, elseBranch);
   }
 
   private Stmt forStmt() {
+    Token operator = previous();
     consume(LEFT_PAREN, "'(' is missing in a 'for' loop");
 
     Stmt init = null;
@@ -317,16 +324,17 @@ class RecursiveDescentParser extends Parser {
 
     List<Stmt> block = new ArrayList<>();
     if (init != null) block.add(init);
-    block.add(new Stmt.While(condition, new Stmt.Block(whileBody)));
+    block.add(new Stmt.While(operator, condition, new Stmt.Block(whileBody)));
 
     return new Stmt.Block(block);
   }
 
   private Stmt whileStmt() {
+    Token operator = previous();
     consume(LEFT_PAREN, "'(' is missing in a 'while' loop");
     Expr condition = expr();
     consume(RIGHT_PAREN, "')' is missing in a 'while' loop");
-    return new Stmt.While(condition, stmt());
+    return new Stmt.While(operator, condition, stmt());
   }
 
   private List<Stmt> block() {
@@ -373,7 +381,7 @@ class RecursiveDescentParser extends Parser {
 
     consume(RIGHT_PAREN, "')' is expected");
     Token returnType = consume(IDENTIFIER, "Missing return type of a function");
-
+    consume(LEFT_BRACE, "'{' expected after function signature"); // #FIXME: hear or in block()?
     return new Stmt.Function(name, params, types, returnType, block());
   }
 

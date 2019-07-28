@@ -36,11 +36,13 @@ abstract class Stmt {
   }
 
   static class If extends Stmt {
+    final Token operator;
     final Expr cond;
     final Stmt thenBranch;
     final Stmt elseBranch;
 
-    If(Expr cond, Stmt thenBranch, Stmt elseBranch) {
+    If(Token operator, Expr cond, Stmt thenBranch, Stmt elseBranch) {
+      this.operator = operator;
       this.cond = cond;
       this.thenBranch = thenBranch;
       this.elseBranch = elseBranch;
@@ -66,10 +68,12 @@ abstract class Stmt {
   }
 
   static class While extends Stmt {
+    final Token operator;
     final Expr cond;
     final Stmt body;
 
-    While(Expr cond, Stmt body) {
+    While(Token operator, Expr cond, Stmt body) {
+      this.operator = operator;
       this.cond = cond;
       this.body = body;
     }
@@ -102,9 +106,11 @@ abstract class Stmt {
   }
 
   static class Return extends Stmt {
+    final Token operator;
     final Expr expr;
 
-    Return(Expr expr) {
+    Return(Token operator, Expr expr) {
+      this.operator = operator;
       this.expr = expr;
     }
 
