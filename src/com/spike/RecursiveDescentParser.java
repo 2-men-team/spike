@@ -133,9 +133,11 @@ class RecursiveDescentParser extends Parser {
     if (match(LEFT_PAREN)) {
       List<Expr> args = new ArrayList<>();
 
-      do {
-        args.add(expr());
-      } while (match(COMMA));
+      if (!is(RIGHT_PAREN)) {
+        do {
+          args.add(expr());
+        } while (match(COMMA));
+      }
 
       Token paren = consume(RIGHT_PAREN, "')' is missing after call expression");
       return new Expr.Call(value, paren, args);

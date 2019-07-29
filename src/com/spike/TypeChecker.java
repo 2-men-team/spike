@@ -272,7 +272,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       String varType = ((Token) variable).lexeme;
       if (type == -1 || classTable.get(varType) == type)
         return expr.type = classTable.get(varType);
-      error(expr.name, "Inferred type of assign expression '" + intToClass.get(type) + "'"
+      error(expr.name, "Inferred type of expression '" + intToClass.get(type) + "'"
        + " does not conform to declared type '" + varType + "'" + " of the variable '" + expr.name.lexeme + "'");
     } else {
       error(expr.name, "Variable '" + expr.name.lexeme + "' is not defined.");
