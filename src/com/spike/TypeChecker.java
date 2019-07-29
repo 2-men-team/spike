@@ -7,21 +7,18 @@ import java.util.List;
 class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   private final ErrorReporter reporter;
   private final List<Stmt> stmts;
-  private Environment environment;
+  private Environment environment = new Environment();
 
   private HashMap<String, Integer> classTable;
   private HashMap<Integer, String> intToClass;
   private InheritanceGraph tree;
 
   private boolean hasMain = false;
-  private boolean hasReturn = false;
   private Stmt.Function currentFunction = null;
 
-  TypeChecker(List<Stmt> stmts, ErrorReporter reporter, Environment environment) {
+  TypeChecker(List<Stmt> stmts, ErrorReporter reporter) {
     this.stmts = stmts;
     this.reporter = reporter;
-    this.environment = environment;
-    checkAll();
   }
 
   // #TODO: Add 'void' type, better handle 'null' type
@@ -32,6 +29,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     classTable.put("double", 2);
     classTable.put("bool", 3);
     classTable.put("String", 4);
+    classTable.put("void", 5);
 
     intToClass = new HashMap<>();
     intToClass.put(-1, "Null");
@@ -40,6 +38,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     intToClass.put(2, "double");
     intToClass.put(3, "bool");
     intToClass.put(4, "String");
+    intToClass.put(5, "void");
   }
 
   private void buildInheritanceTree() {
@@ -57,6 +56,10 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     gatherGlobals();
     if (reporter.hadErrors()) return;
     checkStmts();
+  }
+
+  void check() {
+    checkAll();
   }
 
   private void gatherGlobals() {
@@ -184,7 +187,8 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
         + intToClass.get(type) + "' found");
     } else {
       stmt.thenBranch.accept(this);
-      stmt.elseBranch.accept(this);
+      if (stmt.elseBranch != null)
+        stmt.elseBranch.accept(this);
     }
 
     endScope();
@@ -193,7 +197,12 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
   @Override
   public Void visit(Stmt.Return stmt) {
-    hasReturn = true;
+    if (stmt.expr == null) {
+      if (currentFunction.returnType.type != TokenType.VOID)
+        error(stmt.operator, "Empty return statement in function '" + currentFunction.name.lexeme + "' returning non void");
+      return null;
+    }
+
     int type = stmt.expr.accept(this);
     if (type != -1 && type != classTable.get(currentFunction.returnType.lexeme)) {
       error(stmt.operator, "Inferred type of return expression '" + intToClass.get(type) + "'"
@@ -207,7 +216,6 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   @Override
   public Void visit(Stmt.Function function) {
     beginScope();
-    hasReturn = false;
     currentFunction = function;
 
     for (int i = 0; i < function.params.size(); i++)
@@ -216,10 +224,8 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     for (Stmt stmt : function.body)
       stmt.accept(this);
 
-    if (!hasReturn)
-      error(function.name, "Function '" + function.name.lexeme + "' doesn't have return type");
+    new ReturnTypeChecker(function).check();
 
-    hasReturn = false;
     currentFunction = null;
     endScope();
     return null;
@@ -399,6 +405,82 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   private void checkType(Token type) {
     if (!classTable.containsKey(type.lexeme)) {
       error(type, "Type '" + type.lexeme + "' is not defined");
+    }
+  }
+
+  private class ReturnTypeChecker implements StmtVisitor<Boolean> {
+    private Stmt.Function function;
+    private Stmt.Return lastReturn;
+    private boolean hadError = false;
+
+    ReturnTypeChecker(Stmt.Function function) {
+      this.function = function;
+    }
+
+    boolean check() {
+      if (checkReturnStmts(function.body))
+        return true;
+
+      if (!hadError && function.returnType.type != TokenType.VOID) {
+        error(function.name, "Control reached the end in function returning non-void");
+        return false;
+      }
+
+      return !hadError;
+    }
+
+    private boolean checkReturnStmts(List<Stmt> statements) {
+      for (int i = 0; i < statements.size(); i++) {
+        boolean willReturn = statements.get(i).accept(this);
+        if (willReturn) {
+          if (i == statements.size() - 1) return true;
+          else {
+            hadError = true;
+            error(lastReturn.operator,"Unreachable statement(s) after 'return'"); // #TODO: improve unreachability error handling
+          }
+        }
+      }
+
+      return false;
+    }
+
+    @Override
+    public Boolean visit(Stmt.Var stmt) {
+      return false;
+    }
+
+    @Override
+    public Boolean visit(Stmt.Block stmt) {
+      return checkReturnStmts(stmt.statements);
+    }
+
+    @Override
+    public Boolean visit(Stmt.Expression stmt) {
+      return false;
+    }
+
+    @Override
+    public Boolean visit(Stmt.While stmt) {
+      return stmt.body.accept(this);
+    }
+
+    @Override
+    public Boolean visit(Stmt.If stmt) {
+      boolean willReturn = stmt.thenBranch.accept(this);
+      if (stmt.elseBranch != null)
+        willReturn &= stmt.elseBranch.accept(this);
+      return willReturn;
+    }
+
+    @Override
+    public Boolean visit(Stmt.Return stmt) {
+      lastReturn = stmt;
+      return true;
+    }
+
+    @Override
+    public Boolean visit(Stmt.Function stmt) {
+      return null;
     }
   }
 

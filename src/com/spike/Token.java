@@ -17,6 +17,6 @@ class Token {
 
   @Override
   public String toString() {
-    return "[" + lexeme + " " + type + " " + line + "]";
+    return "[" + lexeme + " " + type + " " + line + ":" + column + "]";
   }
 }

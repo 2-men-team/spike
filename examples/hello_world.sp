@@ -1,10 +1,7 @@
-var x : String = 25;
-
-def main() String {
-    print(x);
-    return "Hello world!";
+def sum(x: int, y: int) int {
+  return (x + y * 2) >> 1;
 }
 
-def print(x: String) int {
-  return 0;
+def main() void {
+    return;
 }

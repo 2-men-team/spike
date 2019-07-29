@@ -33,11 +33,17 @@ public final class Spike {
     var scanner = new Scanner(source, reporter);
     var tokens = scanner.scanTokens();
 
+    /*
+    for (Token token : tokens) {
+      System.out.println(token);
+    }*/
+
     Parser parser = Parser.getParser(tokens, reporter);
     if (!parser.parse()) return;
 
     List<Stmt> stmts = parser.getAst();
-    TypeChecker checker = new TypeChecker(stmts, reporter, new Environment());
+    TypeChecker checker = new TypeChecker(stmts, reporter);
+    checker.check();
   }
 
   private static boolean setParserType(String name) {

@@ -35,6 +35,7 @@ class Scanner {
     keywords.put("return", RETURN);
     keywords.put("new", NEW);
     keywords.put("is", IS);
+    keywords.put("void", VOID);
   }
 
   public List<Token> scanTokens() {
@@ -96,8 +97,9 @@ class Scanner {
       case ':': addToken(COLON); break;
       case ';': addToken(SEMICOLON); break;
       case '"': string(); break;
-      case ' ': case '\r': case '\t': break;
-      case '\n': line++; break;
+      case '\t': column += 4; break; // tab is 4 spaces (1 advance() + 3)
+      case ' ': case '\r': break;
+      case '\n': line++; column++; break;
 
       default: {
         if (isDigit(c))

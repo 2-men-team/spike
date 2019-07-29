@@ -63,7 +63,7 @@ class ErrorReporter {
     return s + lines[token.line - 1] + "\n\t" +
         " ".repeat(token.column - 1) + "^\n\t" +
         "-".repeat(token.column - 1) + "|\n\n" +
-        message;
+        message + "\n";
   }
 
   void report(Token token, String message) {

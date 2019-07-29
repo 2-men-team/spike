@@ -283,7 +283,8 @@ class RecursiveDescentParser extends Parser {
 
   private Stmt returnStmt() {
     Token operator = previous();
-    Expr value = expr();
+    Expr value = null;
+    if (!is(SEMICOLON)) value = expr();
     consume(SEMICOLON, "';' is missing after 'return' statement");
     return new Stmt.Return(operator, value);
   }
@@ -341,7 +342,7 @@ class RecursiveDescentParser extends Parser {
     List<Stmt> result = new ArrayList<>();
 
     while (!is(EOF, RIGHT_BRACE)) {
-      result.add(stmt());
+      result.add(declaration()); // #FIXME: allow function in function declaration? are functions first-class objects?
     }
 
     consume(RIGHT_BRACE, "'}' is missing in a block statement");
@@ -380,7 +381,11 @@ class RecursiveDescentParser extends Parser {
     }
 
     consume(RIGHT_PAREN, "')' is expected");
-    Token returnType = consume(IDENTIFIER, "Missing return type of a function");
+    Token returnType;
+    if (match(VOID))
+      returnType = previous();
+    else
+      returnType = consume(IDENTIFIER, "Missing return type of a function");
     consume(LEFT_BRACE, "'{' expected after function signature"); // #FIXME: hear or in block()?
     return new Stmt.Function(name, params, types, returnType, block());
   }
