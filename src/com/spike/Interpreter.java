@@ -3,6 +3,8 @@ package com.spike;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.spike.DefTypes.*;
+
 class Interpreter implements ExprVisitor<Object>, StmtVisitor<Void> {
   private final ErrorReporter reporter;
   private Environment environment =  new Environment();
@@ -102,24 +104,24 @@ class Interpreter implements ExprVisitor<Object>, StmtVisitor<Void> {
       case BIT_AND: return (int) left & (int) right;
       case NOT_EQUAL: return !isEqual(left, right);
       case EQUAL_EQUAL: return isEqual(left, right);
-      case GREATER: return (type == 1) ?
+      case GREATER: return (type == INT) ?
         (int) left > (int) right : (double) left > (double) right;
-      case GREATER_EQUAL: return (type == 1) ?
+      case GREATER_EQUAL: return (type == INT) ?
         (int) left >= (int) right : (double) left >= (double) right;
-      case LESS: return (type == 1) ?
+      case LESS: return (type == INT) ?
         (int) left < (int) right : (double) left < (double) right;
-      case LESS_EQUAL: return (type == 1) ?
+      case LESS_EQUAL: return (type == INT) ?
         (int) left <= (int) right : (double) left <= (double) right;
       case PLUS: switch (type) {
-        case 1: return (int) left + (int) right;
-        case 2: return (double) left + (double) right;
-        case 4: return new TString(left.toString() + right.toString());
+        case INT: return (int) left + (int) right;
+        case DOUBLE: return (double) left + (double) right;
+        case STRING: return new TString(left.toString() + right.toString());
       }
-      case MINUS: return (type == 1) ?
+      case MINUS: return (type == INT) ?
         (int) left - (int) right : (double) left - (double) right;
-      case STAR: return (type == 1) ?
+      case STAR: return (type == INT) ?
         (int) left * (int) right : (double) left * (double) right;
-      case SLASH: return (type == 1) ?
+      case SLASH: return (type == INT) ?
         (int) left / (int) right : (double) left / (double) right;
       case REMAINDER: return (int) left % (int) right;
       case OR: return (boolean) left || (boolean) right;

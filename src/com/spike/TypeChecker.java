@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.spike.DefTypes.*;
+
 class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   private final ErrorReporter reporter;
   private final List<Stmt> stmts;
@@ -25,29 +27,29 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   // #TODO: Better handle 'null' type
   private void buildClassTable() {
     classTable = new HashMap<>();
-    classTable.put("Object", 0);
-    classTable.put("int", 1);
-    classTable.put("double", 2);
-    classTable.put("bool", 3);
-    classTable.put("String", 4);
-    classTable.put("void", 5);
+    classTable.put("Object", OBJECT);
+    classTable.put("int", INT);
+    classTable.put("double", DOUBLE);
+    classTable.put("bool", BOOL);
+    classTable.put("String", STRING);
+    classTable.put("void", VOID);
 
     intToClass = new HashMap<>();
-    intToClass.put(-1, "Null");
-    intToClass.put(0, "Object");
-    intToClass.put(1, "int");
-    intToClass.put(2, "double");
-    intToClass.put(3, "bool");
-    intToClass.put(4, "String");
-    intToClass.put(5, "void");
+    intToClass.put(NULL, "Null");
+    intToClass.put(OBJECT, "Object");
+    intToClass.put(INT, "int");
+    intToClass.put(DOUBLE, "double");
+    intToClass.put(BOOL, "bool");
+    intToClass.put(STRING, "String");
+    intToClass.put(VOID, "void");
   }
 
   private void buildInheritanceTree() {
     tree = new InheritanceGraph(5);
-    tree.addEdge(1, 0);
-    tree.addEdge(2, 0);
-    tree.addEdge(3, 0);
-    tree.addEdge(4, 0);
+    tree.addEdge(INT, OBJECT);
+    tree.addEdge(DOUBLE, OBJECT);
+    tree.addEdge(BOOL, OBJECT);
+    tree.addEdge(STRING, OBJECT);
   }
 
   private void checkAll() {
@@ -161,8 +163,8 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       error(stmt.name, "'" + stmt.name.lexeme + "' is already defined"); // #TODO Add prev declaration
     } else {
       environment.define(stmt.name.lexeme, stmt.type);
-      int type = (stmt.init == null) ? -1 : stmt.init.accept(this);
-      if (type != -1 && type != classTable.get(stmt.type.lexeme)) {
+      int type = (stmt.init == null) ? NULL : stmt.init.accept(this);
+      if (type != NULL && type != classTable.get(stmt.type.lexeme)) {
         error(stmt.name, "Type of expression '" + intToClass.get(type) + "' doesn't conform to declared type '"
           + stmt.type.lexeme + "'");
       }
@@ -189,7 +191,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     beginScope();
 
     int type = stmt.cond.accept(this);
-    if (type != -1 && type != 3)
+    if (type != NULL && type != BOOL)
       error(stmt.operator, "While conditional expression expects 'bool', but '"
         + intToClass.get(type) + "' found");
     stmt.body.accept(this);
@@ -203,7 +205,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     beginScope();
 
     int type = stmt.cond.accept(this);
-    if (type != -1 && type != 3) {
+    if (type != NULL && type != BOOL) {
       error(stmt.operator, "If conditional expression expects 'bool' but '"
         + intToClass.get(type) + "' found");
     } else {
@@ -225,7 +227,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     }
 
     int type = stmt.expr.accept(this);
-    if (type != -1 && type != classTable.get(currentFunction.returnType.lexeme)) {
+    if (type != NULL && type != classTable.get(currentFunction.returnType.lexeme)) {
       error(stmt.operator, "Inferred type of return expression '" + intToClass.get(type) + "'"
        + " does not conform to declared type '" + currentFunction.returnType.lexeme
        + "' of function '" + currentFunction.name.lexeme + "'");
@@ -258,26 +260,26 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
     switch (expr.operator.type) {
       case NOT: {
-        if (type == 3)
-          return expr.type = 3;
+        if (type == BOOL)
+          return expr.type = BOOL;
         error(expr.operator, "Boolean expected as argument to '!' expression");
         break;
       }
       case MINUS: {
-        if (type == 1 || type == 2)
+        if (type == INT || type == DOUBLE)
           return expr.type = type;
         error(expr.operator, "Minus operator is defined only for 'int' and 'double' types");
         break;
       }
       case BIT_COMPL: {
-        if (type == 1)
+        if (type == INT)
           return expr.type = type;
         error(expr.operator, "Bit complement operator is defined only for 'int");
         break;
       }
     }
 
-    return expr.type = 0;
+    return expr.type = OBJECT;
   }
 
   @Override
@@ -291,7 +293,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     Object variable = environment.get(expr.name);
     if (variable instanceof Token) {
       String varType = ((Token) variable).lexeme;
-      if (type == -1 || classTable.get(varType) == type)
+      if (type == NULL || classTable.get(varType) == type)
         return expr.type = classTable.get(varType);
       error(expr.name, "Inferred type of expression '" + intToClass.get(type) + "'"
        + " does not conform to declared type '" + varType + "'" + " of the variable '" + expr.name.lexeme + "'");
@@ -299,23 +301,23 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       error(expr.name, "Variable '" + expr.name.lexeme + "' is not defined.");
     }
 
-    return expr.type = 0;
+    return expr.type = OBJECT;
   }
 
   @Override
   public Integer visit(Expr.Literal expr) {
     if (expr.value instanceof Boolean)
-      return expr.type = 3;
+      return expr.type = BOOL;
     else if (expr.value instanceof Integer)
-      return expr.type = 1;
+      return expr.type = INT;
     else if (expr.value instanceof Double)
-      return expr.type = 2;
-    return expr.type = -1; // null value
+      return expr.type = DOUBLE;
+    return expr.type = NULL; // null value
   }
 
   @Override
   public Integer visit(Expr.StringLiteral expr) {
-    return expr.type = 4;
+    return expr.type = STRING;
   }
 
   @Override
@@ -335,7 +337,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
         for (int i = 0; i < expr.args.size(); i++) {
           int type = types.get(i);
-          if (type != -1 && type != classTable.get(function.types.get(i).lexeme)) {
+          if (type != NULL && type != classTable.get(function.types.get(i).lexeme)) {
             error(expr.paren, "Inferred type '" + intToClass.get(type) + "' of parameter '"
               + function.params.get(i) + "' does not correspond to declared type '"
               + function.types.get(i).lexeme + "'");
@@ -348,22 +350,22 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       error(expr.paren, "Undefined reference to the function");
     }
 
-    return expr.type = 0;
+    return expr.type = OBJECT;
   }
 
   @Override
   public Integer visit(Expr.Binary expr) {
     int left = expr.left.accept(this), right = expr.right.accept(this);
-    left = (left == -1) ? right : left;
-    right = (right == -1) ? left : right;
+    left = (left == NULL) ? right : left;
+    right = (right == NULL) ? left : right;
 
-    if (expr.operator.type == TokenType.PLUS && (left == 4 || right == 4))
-      return expr.type = 4; // concat everything for string
+    if (expr.operator.type == TokenType.PLUS && (left == STRING || right == STRING))
+      return expr.type = STRING; // concat everything for string
 
     if (left != right) {
       error(expr.operator, "Operator '" + expr.operator.lexeme + "' cannot be applied to '"
         + intToClass.get(left) + "' and '" + intToClass.get(right) + "'");
-      return expr.type = 0;
+      return expr.type = OBJECT;
     }
 
     switch (expr.operator.type) {
@@ -371,15 +373,15 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       case LESS_EQUAL:
       case GREATER:
       case GREATER_EQUAL: {
-        if (left == 1 || left == 2)
-          return expr.type = 3;
+        if (left == INT || left == DOUBLE)
+          return expr.type = BOOL;
         break;
       }
       case PLUS:
       case MINUS:
       case SLASH:
       case STAR: {
-        if (left == 1 || left == 2)
+        if (left == INT || left == DOUBLE)
           return expr.type = left;
         break;
       }
@@ -389,24 +391,24 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       case BIT_AND:
       case BIT_XOR:
       case BIT_OR: {
-        if (left == 1)
+        if (left == INT)
           return expr.type = left;
         break;
       }
       case EQUAL_EQUAL:
       case NOT_EQUAL:
-        return expr.type = 3;
+        return expr.type = BOOL;
       case AND:
       case OR: {
-        if (left == 3)
-          return expr.type = 3;
+        if (left == BOOL)
+          return expr.type = BOOL;
         break;
       }
     }
 
     error(expr.operator, "Operator '" + expr.operator.lexeme + "' cannot be applied to '"
       + intToClass.get(left) + "' and '" + intToClass.get(right) + "'");
-    return expr.type = 0;
+    return expr.type = OBJECT;
   }
 
   @Override
@@ -417,7 +419,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     }
 
     error(expr.name, "Variable '" + expr.name.lexeme + "' is not defined");
-    return 0;
+    return expr.type = OBJECT;
   }
 
   private void checkTypes(List<Token> types) {
