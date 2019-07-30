@@ -490,8 +490,8 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
     @Override
     public Boolean visit(Stmt.If stmt) {
-      return stmt.thenBranch.accept(this) && (stmt.elseBranch == null) ?
-        false : stmt.elseBranch.accept(this);
+      return stmt.thenBranch.accept(this) && ((stmt.elseBranch == null) ?
+        false : stmt.elseBranch.accept(this));
     }
 
     @Override
