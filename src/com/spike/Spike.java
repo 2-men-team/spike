@@ -10,6 +10,7 @@ import java.util.List;
 // Java version 11
 public final class Spike {
   private static final ErrorReporter reporter = new ErrorReporter();
+  private static final Interpreter interpreter = new Interpreter(reporter);
 
   static boolean isRDP = true;
   /*
@@ -33,17 +34,14 @@ public final class Spike {
     var scanner = new Scanner(source, reporter);
     var tokens = scanner.scanTokens();
 
-    /*
-    for (Token token : tokens) {
-      System.out.println(token);
-    }*/
-
     Parser parser = Parser.getParser(tokens, reporter);
     if (!parser.parse()) return;
 
     List<Stmt> stmts = parser.getAst();
     TypeChecker checker = new TypeChecker(stmts, reporter);
     checker.check();
+
+    interpreter.interpret(stmts);
   }
 
   private static boolean setParserType(String name) {

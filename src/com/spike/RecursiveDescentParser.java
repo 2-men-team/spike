@@ -95,14 +95,18 @@ class RecursiveDescentParser extends Parser {
 
   private Stmt declaration() {
     try {
-      if (match(VAR)) return varDecl();
       if (match(FUNCTION)) return funDecl();
-      return stmt();
+      return innerDeclaration();
     } catch (ErrorReporter.Exception e) {
       synchronize();
     }
 
     return null; // we don't care in case of an error
+  }
+
+  private Stmt innerDeclaration() {
+    if (match(VAR)) return varDecl(); // allow declaring vars in block but not functions
+    return stmt();
   }
 
   private Expr primary() {
@@ -344,7 +348,7 @@ class RecursiveDescentParser extends Parser {
     List<Stmt> result = new ArrayList<>();
 
     while (!is(EOF, RIGHT_BRACE)) {
-      result.add(declaration()); // #FIXME: allow function in function declaration? are functions first-class objects?
+      result.add(innerDeclaration()); // #FIXME: allow function in function declaration? are functions first-class objects?
     }
 
     consume(RIGHT_BRACE, "'}' is missing in a block statement");

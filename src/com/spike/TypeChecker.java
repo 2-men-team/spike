@@ -1,6 +1,7 @@
 package com.spike;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -21,7 +22,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     this.reporter = reporter;
   }
 
-  // #TODO: Add 'void' type, better handle 'null' type
+  // #TODO: Better handle 'null' type
   private void buildClassTable() {
     classTable = new HashMap<>();
     classTable.put("Object", 0);
@@ -52,6 +53,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   private void checkAll() {
     buildClassTable();
     buildInheritanceTree();
+    builtins();
     if (reporter.hadErrors()) return;
     gatherGlobals();
     if (reporter.hadErrors()) return;
@@ -60,6 +62,17 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
   void check() {
     checkAll();
+  }
+
+  private void builtins() {
+    // define builtin
+    environment.define("print", new Stmt.Function(
+      new Token(TokenType.IDENTIFIER, "print", null, -1, -1),
+      Arrays.asList(new Token(TokenType.IDENTIFIER, "s", null, -1, -1)),
+      Arrays.asList(new Token(TokenType.IDENTIFIER, "String", null, -1, -1)),
+      new Token(TokenType.VOID, "void", null, -1, -1),
+      new ArrayList<>()
+    ));
   }
 
   private void gatherGlobals() {
@@ -74,7 +87,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
         Stmt.Var v = (Stmt.Var) stmt;
         checkVarDecl(v);
       } else {
-        reporter.report("Only variables and functions declarations allowed on top level " + stmt);
+        reporter.report("Only variable and function declarations are allowed on top level " + stmt);
       }
     }
 
@@ -130,7 +143,15 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
   private void checkStmts() {
     for (Stmt stmt : stmts) {
-      stmt.accept(this);
+      if (stmt instanceof Stmt.Var) { // FIXME: avoid bindings inside functions problems
+        stmt.accept(this);
+      }
+    }
+
+    for (Stmt stmt : stmts) {
+      if (!(stmt instanceof Stmt.Var)) {
+        stmt.accept(this);
+      }
     }
   }
 
@@ -233,7 +254,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
   @Override
   public Integer visit(Expr.Unary expr) {
-    int type = expr.accept(this);
+    int type = expr.right.accept(this);
 
     switch (expr.operator.type) {
       case NOT: {
@@ -251,7 +272,7 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
       case BIT_COMPL: {
         if (type == 1)
           return expr.type = type;
-        error(expr.operator, "Bit complement operator is define only for ");
+        error(expr.operator, "Bit complement operator is defined only for 'int");
         break;
       }
     }
@@ -285,10 +306,10 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
   public Integer visit(Expr.Literal expr) {
     if (expr.value instanceof Boolean)
       return expr.type = 3;
-    else if (expr.value instanceof Double)
-      return expr.type = 2;
     else if (expr.value instanceof Integer)
       return expr.type = 1;
+    else if (expr.value instanceof Double)
+      return expr.type = 2;
     return expr.type = -1; // null value
   }
 
@@ -336,6 +357,9 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     left = (left == -1) ? right : left;
     right = (right == -1) ? left : right;
 
+    if (expr.operator.type == TokenType.PLUS && (left == 4 || right == 4))
+      return expr.type = 4; // concat everything for string
+
     if (left != right) {
       error(expr.operator, "Operator '" + expr.operator.lexeme + "' cannot be applied to '"
         + intToClass.get(left) + "' and '" + intToClass.get(right) + "'");
@@ -343,15 +367,15 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     }
 
     switch (expr.operator.type) {
-      case PLUS: {
-        if (left == 1 || left == 2 || left == 4)
-          return expr.type = left;
-        break;
-      }
       case LESS:
       case LESS_EQUAL:
       case GREATER:
-      case GREATER_EQUAL:
+      case GREATER_EQUAL: {
+        if (left == 1 || left == 2)
+          return expr.type = 3;
+        break;
+      }
+      case PLUS:
       case MINUS:
       case SLASH:
       case STAR: {
@@ -466,10 +490,8 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
 
     @Override
     public Boolean visit(Stmt.If stmt) {
-      boolean willReturn = stmt.thenBranch.accept(this);
-      if (stmt.elseBranch != null)
-        willReturn &= stmt.elseBranch.accept(this);
-      return willReturn;
+      return stmt.thenBranch.accept(this) && (stmt.elseBranch == null) ?
+        false : stmt.elseBranch.accept(this);
     }
 
     @Override
@@ -482,6 +504,14 @@ class TypeChecker implements ExprVisitor<Integer>, StmtVisitor<Void> {
     public Boolean visit(Stmt.Function stmt) {
       return null;
     }
+  }
+
+  public HashMap<String, Integer> getClassTable() {
+    return classTable;
+  }
+
+  public HashMap<Integer, String> getIntToClass() {
+    return intToClass;
   }
 
   private void error(Token token, String message) {

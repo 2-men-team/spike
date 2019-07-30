@@ -59,6 +59,9 @@ class ErrorReporter {
   }
   
   protected String format(Token token, String message) {
+    if (token.line == -1 && token.column == -1)
+      return "Error in builtin '" + token.lexeme + "'\n\t" + message + "\n";
+
     String s = String.format("Error at line %d, col %d\n\t", token.line, token.column);
     return s + lines[token.line - 1] + "\n\t" +
         " ".repeat(token.column - 1) + "^\n\t" +
