@@ -1,22 +1,21 @@
 package com.spike;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 class InheritanceGraph {
   private int V;
   private int E;
-  private LinkedList<Integer>[] adj;
+  private ArrayList<Integer>[] adj;
 
   @SuppressWarnings("unchecked")
   InheritanceGraph(int V) {
     if (V <= 0) throw new IllegalArgumentException("V is less equal to zero");
     this.V = V;
     this.E = 0;
-    adj = (LinkedList<Integer>[]) new LinkedList[V];
+    adj = (ArrayList<Integer>[]) new ArrayList[V];
     for (int v = 0; v < V; v++) {
-      adj[v] = new LinkedList<>();
+      adj[v] = new ArrayList<>();
     }
   }
 
