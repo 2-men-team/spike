@@ -65,6 +65,7 @@ enum TokenType {
   STRING,
   INTEGER,
   DOUBLE,
+  VOID,
   TRUE,
   FALSE,
   TOKEN_NULL,

@@ -3,7 +3,7 @@ package com.spike;
 import java.util.List;
 
 abstract class Expr {
-  String type; // variable for type checker
+  int type; // variable for type checker
 
   abstract <T> T accept(ExprVisitor<T> visitor);
 
@@ -44,23 +44,6 @@ abstract class Expr {
 
     Grouping(Expr expr) {
       this.expr = expr;
-    }
-
-    @Override
-    <T> T accept(ExprVisitor<T> visitor) {
-      return visitor.visit(this);
-    }
-  }
-
-  static class Logical extends Expr {
-    final Expr left;
-    final Token operator;
-    final Expr right;
-
-    Logical(Expr left, Token operator, Expr right) {
-      this.left = left;
-      this.operator = operator;
-      this.right = right;
     }
 
     @Override

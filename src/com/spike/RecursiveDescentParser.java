@@ -28,6 +28,10 @@ class RecursiveDescentParser extends Parser {
     return tokens.get(curr++);
   }
 
+  private Token previous() {
+    return tokens.get(curr - 1);
+  }
+
   private Token peek() {
     return tokens.get(curr);
   }
@@ -81,7 +85,7 @@ class RecursiveDescentParser extends Parser {
       ast.add(declaration());
     }
 
-    return reporter.hadErrors();
+    return !reporter.hadErrors();
   }
 
   @Override
@@ -91,14 +95,18 @@ class RecursiveDescentParser extends Parser {
 
   private Stmt declaration() {
     try {
-      if (match(VAR)) return varDecl();
       if (match(FUNCTION)) return funDecl();
-      return stmt();
+      return innerDeclaration();
     } catch (ErrorReporter.Exception e) {
       synchronize();
     }
 
     return null; // we don't care in case of an error
+  }
+
+  private Stmt innerDeclaration() {
+    if (match(VAR)) return varDecl(); // allow declaring vars in block but not functions
+    return stmt();
   }
 
   private Expr primary() {
@@ -129,9 +137,11 @@ class RecursiveDescentParser extends Parser {
     if (match(LEFT_PAREN)) {
       List<Expr> args = new ArrayList<>();
 
-      do {
-        args.add(expr());
-      } while (match(COMMA));
+      if (!is(RIGHT_PAREN)) {
+        do {
+          args.add(expr());
+        } while (match(COMMA));
+      }
 
       Token paren = consume(RIGHT_PAREN, "')' is missing after call expression");
       return new Expr.Call(value, paren, args);
@@ -278,12 +288,15 @@ class RecursiveDescentParser extends Parser {
   }
 
   private Stmt returnStmt() {
-    Expr value = expr();
+    Token operator = previous();
+    Expr value = null;
+    if (!is(SEMICOLON)) value = expr();
     consume(SEMICOLON, "';' is missing after 'return' statement");
-    return new Stmt.Return(value);
+    return new Stmt.Return(operator, value);
   }
 
   private Stmt ifStmt() {
+    Token operator = previous();
     consume(LEFT_PAREN, "'(' is missing in an 'if' statement");
     Expr condition = expr();
     consume(RIGHT_PAREN, "')' is missing in an 'if' statement");
@@ -291,10 +304,11 @@ class RecursiveDescentParser extends Parser {
     Stmt thenBranch = stmt(), elseBranch = null;
     if (match(ELSE)) elseBranch = stmt();
 
-    return new Stmt.If(condition, thenBranch, elseBranch);
+    return new Stmt.If(operator, condition, thenBranch, elseBranch);
   }
 
   private Stmt forStmt() {
+    Token operator = previous();
     consume(LEFT_PAREN, "'(' is missing in a 'for' loop");
 
     Stmt init = null;
@@ -317,23 +331,24 @@ class RecursiveDescentParser extends Parser {
 
     List<Stmt> block = new ArrayList<>();
     if (init != null) block.add(init);
-    block.add(new Stmt.While(condition, new Stmt.Block(whileBody)));
+    block.add(new Stmt.While(operator, condition, new Stmt.Block(whileBody)));
 
     return new Stmt.Block(block);
   }
 
   private Stmt whileStmt() {
+    Token operator = previous();
     consume(LEFT_PAREN, "'(' is missing in a 'while' loop");
     Expr condition = expr();
     consume(RIGHT_PAREN, "')' is missing in a 'while' loop");
-    return new Stmt.While(condition, stmt());
+    return new Stmt.While(operator, condition, stmt());
   }
 
   private List<Stmt> block() {
     List<Stmt> result = new ArrayList<>();
 
     while (!is(EOF, RIGHT_BRACE)) {
-      result.add(stmt());
+      result.add(innerDeclaration()); // #FIXME: allow function in function declaration? are functions first-class objects?
     }
 
     consume(RIGHT_BRACE, "'}' is missing in a block statement");
@@ -372,8 +387,12 @@ class RecursiveDescentParser extends Parser {
     }
 
     consume(RIGHT_PAREN, "')' is expected");
-    Token returnType = consume(IDENTIFIER, "Missing return type of a function");
-
+    Token returnType;
+    if (match(VOID))
+      returnType = previous();
+    else
+      returnType = consume(IDENTIFIER, "Missing return type of a function");
+    consume(LEFT_BRACE, "'{' expected after function signature"); // #FIXME: hear or in block()?
     return new Stmt.Function(name, params, types, returnType, block());
   }
 

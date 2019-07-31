@@ -5,13 +5,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 // Java version 11
 public final class Spike {
   private static final ErrorReporter reporter = new ErrorReporter();
+  private static final Interpreter interpreter = new Interpreter(reporter);
 
   static boolean isRDP = true;
-
+  /*
   private static void runCLI() throws IOException {
     var reader = new BufferedReader(new InputStreamReader(System.in));
     System.out.print(">> ");
@@ -21,7 +23,7 @@ public final class Spike {
       run(line);
       System.out.print(">> ");
     }
-  }
+  }*/
 
   private static void runFile(String path) throws IOException {
     run(Files.readString(Paths.get(path)));
@@ -32,9 +34,14 @@ public final class Spike {
     var scanner = new Scanner(source, reporter);
     var tokens = scanner.scanTokens();
 
-    for (Token t : tokens) {
-      System.out.println(t);
-    }
+    Parser parser = Parser.getParser(tokens, reporter);
+    if (!parser.parse()) return;
+
+    List<Stmt> stmts = parser.getAst();
+    TypeChecker checker = new TypeChecker(stmts, reporter);
+    checker.check();
+
+    interpreter.interpret(stmts);
   }
 
   private static boolean setParserType(String name) {
@@ -47,21 +54,16 @@ public final class Spike {
   }
 
   // #TODO: REWRITE CLI INTERFACE
-  public static void main(String[] args) throws IOException {
-    if (args.length > 3) {
-      System.out.println("Usage: spike [ main.sp ] [ parser type ]");
-    } else if (args.length == 3) {
+  public static void main(String... args) throws IOException {
+    if (args.length == 3) {
       if (setParserType(args[2]))
         runFile(args[1]);
       else
         System.out.println("Invalid parser type, 'pratt' and 'rdp' supported only.");
     } else if (args.length == 2) {
-      if (setParserType(args[1]))
-        runCLI();
-      else
-        runFile(args[1]);
+      runFile(args[1]);
     } else {
-      runCLI();
+      System.out.println("Usage: spike main.sp [ parser type ]");
     }
   }
 }

@@ -35,6 +35,7 @@ class Scanner {
     keywords.put("return", RETURN);
     keywords.put("new", NEW);
     keywords.put("is", IS);
+    keywords.put("void", VOID);
   }
 
   public List<Token> scanTokens() {
@@ -96,8 +97,9 @@ class Scanner {
       case ':': addToken(COLON); break;
       case ';': addToken(SEMICOLON); break;
       case '"': string(); break;
-      case ' ': case '\r': case '\t': break;
-      case '\n': line++; break;
+      case '\t': column += 4; break; // tab is 4 spaces (1 advance() + 3)
+      case ' ': case '\r': break;
+      case '\n': line++; column++; break;
 
       default: {
         if (isDigit(c))
@@ -105,7 +107,7 @@ class Scanner {
         else if (isAlpha(c))
           identifier();
         else {
-          reporter.report(line, "Illegal character: " + c);
+          reporter.report(line, column, "Illegal character: " + c);
         }
         break;
       }
@@ -143,7 +145,7 @@ class Scanner {
     }
 
     if (isAtEnd()) {
-      reporter.report(line, "Unterminated string literal");
+      reporter.report(line, column,"Unterminated string literal");
     } else {
       advance();
       addToken(STRING, source.substring(start + 1, current - 1));
@@ -159,7 +161,7 @@ class Scanner {
   private void multilineComment() {
     while (true) {
       if (isAtEnd()) {
-        reporter.report(line, "Unterminated multiline comment");
+        reporter.report(line, column, "Unterminated multiline comment");
         break;
       }
 
@@ -176,6 +178,7 @@ class Scanner {
   private boolean match(char c) {
     if (isAtEnd() || source.charAt(current) != c)
       return false;
+    column++;
     current++;
     return true;
   }
@@ -208,7 +211,9 @@ class Scanner {
 
   private char advance() {
     current++;
-    return source.charAt(current - 1);
+    char c = source.charAt(current - 1);
+    column = (c == '\n') ? -1 : (column + 1);
+    return c;
   }
 
   private void addToken(TokenType type) {
@@ -217,6 +222,6 @@ class Scanner {
 
   private void addToken(TokenType type, Object literal) {
     String lexeme = source.substring(start, current);
-    tokens.add(new Token(type, lexeme, literal, column, line));
+    tokens.add(new Token(type, lexeme, literal, line, column));
   }
 }
